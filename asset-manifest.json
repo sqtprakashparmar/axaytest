@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.js": "/axaytest/static/js/main.b4950b6b.js",
+    "static/js/453.9cbcf4e8.chunk.js": "/axaytest/static/js/453.9cbcf4e8.chunk.js",
+    "static/media/qblogo-grey.svg": "/axaytest/static/media/qblogo-grey.847ff2d0192d3a62de9cd16965d1de21.svg",
+    "index.html": "/axaytest/index.html",
+    "main.b4950b6b.js.map": "/axaytest/static/js/main.b4950b6b.js.map",
+    "453.9cbcf4e8.chunk.js.map": "/axaytest/static/js/453.9cbcf4e8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.b4950b6b.js"
+  ]
+}
