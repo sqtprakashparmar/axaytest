@@ -295,7 +295,6 @@ function App() {
     });
   };
   const handleEndCall = async () => {
-    debugger;
     // Find the active session
     // const activeSession = QB.webrtc.sessions.find(session => session.state === QB.webrtc.SessionConnectionState.CONNECTED);
     // QB.webrtc.onCallListener = function (session: any, extension: any) {
@@ -507,7 +506,6 @@ function App() {
         let uname = AllUsersInfo.find(
           (element: any) => element.user.id === session.currentUserID
         );
-        debugger
         const acceptCall = window.confirm(
           `Incoming call from ${session.currentUserID}. Do you want to accept?`
         );
@@ -574,27 +572,7 @@ function App() {
         }
       };
 
-      QB.webrtc.onSessionConnectionStateChangedListener = (
-        session,
-        userId,
-        connectionState
-      ) => {
-        console.log("onSessionConnectionStateChangedListener", connectionState);
-
-        if (connectionState === QB.webrtc.SessionConnectionState.CONNECTED) {
-          for (const key in session.peerConnections) {
-            const peer = session.peerConnections[key];
-            const remoteStreams = peer
-              .getReceivers()
-              .map((receiver) => receiver.track)
-              .filter((track) => track && track.kind === "video");
-            if (remoteStreams.length > 0) {
-              const stream = new MediaStream(remoteStreams);
-              session.attachMediaStream("remoteVideo", stream);
-            }
-          }
-        }
-      };
+     
 
       QB.webrtc.onAcceptCallListener = function (session, userId, extension) {
         console.log("------------------------------------------------------");
