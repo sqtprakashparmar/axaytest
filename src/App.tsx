@@ -18,7 +18,7 @@ import {
   QBDataContextType,
 } from "quickblox-react-ui-kit";
 import QB, { QBUser } from "quickblox/quickblox";
-// import './App.scss';
+// import './session.scss';
 // import { QBConfig } from "./QBconfig";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import Auth from "./layout/Auth/Auth";
@@ -178,24 +178,26 @@ function App() {
       },
     },
     webrtc: {
-      // answerTimeInterval: 120,
-      // autoReject: true,
-      // incomingLimit: 1,
-      // dialingTimeInterval: 5,
-      // disconnectTimeInterval: 30,
-      // statsReportTimeInterval: false,
+      answerTimeInterval: 120,
+      autoReject: true,
+      incomingLimit: 1,
+      dialingTimeInterval: 5,
+      disconnectTimeInterval: 30,
+      statsReportTimeInterval: true,
     },
-    // config: {
-    //   debug: false,
-    //   pingTimeout: 5,
-    //   pingLocalhostTimeInterval: 5,
-    //   webrtc: {
-    //     answerTimeInterval: 30,
-    //     dialingTimeInterval: 5,
-    //     disconnectTimeInterval: 30,
-    //     statsReportTimeInterval: false,
-    //   },
-    // },
+    config: {
+      debug: false,
+      pingTimeout: 5,
+      pingLocalhostTimeInterval: 5,
+      webrtc: {
+        answerTimeInterval: 120,
+        autoReject: true,
+        incomingLimit: 1,
+        dialingTimeInterval: 5,
+        disconnectTimeInterval: 30,
+        statsReportTimeInterval: true,
+      },
+    },
   };
   const QB_Token = localStorage.getItem("qb_sessionToken");
   var mediaParams = {
@@ -256,6 +258,9 @@ function App() {
   //     setErrorMessage("Error starting call.");
   //   }
   // };
+  const [calleeStatus, setCalleeStatus] = useState<{ [key: number]: string }>(
+    {}
+  );
 
   const handleStartCall = async () => {
     const calleesIds = [CallesId?.user?.id]; // Array of user IDs to call
@@ -290,7 +295,7 @@ function App() {
     });
   };
   const handleEndCall = async () => {
-    debugger
+    debugger;
     // Find the active session
     // const activeSession = QB.webrtc.sessions.find(session => session.state === QB.webrtc.SessionConnectionState.CONNECTED);
     // QB.webrtc.onCallListener = function (session: any, extension: any) {
@@ -308,11 +313,11 @@ function App() {
     //   // }
     // };
     if (localVideoRef.current) {
-          localVideoRef.current.srcObject = null;
-        }
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = null;
-        }
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
   };
 
   const handleStartCall1 = async () => {
@@ -496,16 +501,13 @@ function App() {
   useEffect(() => {
     if (isSDKInitialized && QB.webrtc) {
       QB.webrtc.onCallListener = function (session, extension) {
-        debugger
         console.log("------------------------------------------------------");
         console.log("------------------------------------------------------");
         console.log("Remote session received from user " + session);
-        debugger;
-        let temp = AllUsersInfo?.find(
-          (f: any) => f.id === session.currentUserID
+        let uname = AllUsersInfo.find(
+          (element: any) => element.user.id === session.currentUserID
         );
-        console.log("temp ::", temp);
-
+        debugger
         const acceptCall = window.confirm(
           `Incoming call from ${session.currentUserID}. Do you want to accept?`
         );
@@ -513,28 +515,22 @@ function App() {
           session.getUserMedia(
             mediaParams,
             function (err: any, remoteStream: any) {
-              console.log("remoteStream ::",remoteStream);
-              console.log("  ::",remoteStream);
-              console.log("remoteStream ::",remoteStream);
-              console.log("remoteStream ::",remoteStream);
-              console.log("remoteStream ::",remoteStream);
-              console.log("remoteStream ::",remoteStream);
-              
+              console.log("remoteStream ::", remoteStream);
+
               if (err) {
                 console.log("error getting user media:", err);
               } else {
                 // var extension = {};
                 session.accept(extension);
                 if (localVideoRef.current && remoteStream) {
-                  // localVideoRef.current.srcObject = remoteStream;
-                  // session.attachMediaStream("localVideo", remoteStream);
-                  // session.attachMediaStream("remoteVideo", remoteStream);
+                  localVideoRef.current.srcObject = remoteStream;
+                  session.attachMediaStream("remoteVideo", remoteStream);
                 }
                 //session.attachMediaStream("localVideo", remoteStream);
                 // if (remoteVideoRef.current) {
                 //   session.attachMediaStream("remoteVideo", remoteStream);
                 //   remoteVideoRef.current.srcObject = remoteStream;
-                  
+
                 // }
               }
             }
@@ -543,6 +539,63 @@ function App() {
           session.reject(extension);
         }
       };
+      QB.webrtc.onSessionConnectionStateChangedListener = (
+        session,
+        userId,
+        connectionState
+      ) => {
+        console.log("onSessionConnectionStateChangedListener", connectionState);
+
+        const stateKey = Object.keys(QB.webrtc.SessionConnectionState).find(
+          (key) =>
+            QB.webrtc.SessionConnectionState[
+              key as keyof typeof QB.webrtc.SessionConnectionState
+            ] === connectionState
+        );
+
+        console.group("onSessionConnectionStateChangedListener.");
+        console.log("Session: ", session);
+        console.log("UserId: ", userId);
+        console.log("Connection state: ", stateKey);
+        console.groupEnd();
+
+        if (connectionState === QB.webrtc.SessionConnectionState.CONNECTED) {
+          for (const key in session.peerConnections) {
+            const peer = session.peerConnections[key];
+            const remoteStreams = peer
+              .getReceivers()
+              .map((receiver) => receiver.track)
+              .filter((track) => track && track.kind === "video");
+            if (remoteStreams.length > 0) {
+              const stream = new MediaStream(remoteStreams);
+              session.attachMediaStream("remoteVideo", stream);
+            }
+          }
+        }
+      };
+
+      QB.webrtc.onSessionConnectionStateChangedListener = (
+        session,
+        userId,
+        connectionState
+      ) => {
+        console.log("onSessionConnectionStateChangedListener", connectionState);
+
+        if (connectionState === QB.webrtc.SessionConnectionState.CONNECTED) {
+          for (const key in session.peerConnections) {
+            const peer = session.peerConnections[key];
+            const remoteStreams = peer
+              .getReceivers()
+              .map((receiver) => receiver.track)
+              .filter((track) => track && track.kind === "video");
+            if (remoteStreams.length > 0) {
+              const stream = new MediaStream(remoteStreams);
+              session.attachMediaStream("remoteVideo", stream);
+            }
+          }
+        }
+      };
+
       QB.webrtc.onAcceptCallListener = function (session, userId, extension) {
         console.log("------------------------------------------------------");
         console.log("Remote session received from user " + session);
@@ -579,7 +632,7 @@ function App() {
         alert(stats);
       };
     }
-  }, [isSDKInitialized]);
+  }, [isSDKInitialized, AllUsersInfo]);
 
   function AllUsers(data1: any) {
     fetch("https://api.quickblox.com/users.json?page=1&per_page=50", {
